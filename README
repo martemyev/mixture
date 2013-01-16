@@ -1,0 +1,14 @@
+How to build mixture library:
+
+Linux
+
+1. Go to the project directory (we'll call it 'mixdir')
+  cd mixdir
+2. Create directory for building files (cmake files, object files, mixture lirbary itself, etc - we'll call it 'build')
+  mkdir build
+3. Go to 'build' directory
+  cd build
+4. Start CMake to configure the project (note that CMakeLists.txt file with instructions to CMake is in parent directory, so we need to point this out)
+  cmake ..
+5. Build the library
+  make
