@@ -7,6 +7,9 @@
 
 class Node3D;
 
+/**
+ * Class for triangular surface mesh built by Gmsh
+ */
 class TriangularMesh {
 private:
   int nNodes; // the number of mesh nodes
@@ -21,15 +24,15 @@ public:
   TriangularMesh();
   ~TriangularMesh();
 
-  int getnNodes(); // only mesh nodes
-  int getnTris();
+  int getnNodes() const; // get the number of mesh nodes
+  int getnTris() const; // get the number of mesh triangles
 
-  Node3D* getNode(int);
-  MeshTriangle3D* getTri(int);
+  Node3D* getNode(int); // get the node
+  MeshTriangle3D* getTri(int); // get the triangle
 
-  void readFromGmsh(std::string);
-  void readFromGmshBinary(std::string);
-  void readFromGmshASCII(std::string);
+  int readFromGmsh(std::string); // read from .msh file
+  int readFromGmshBinary(std::string); // read from binary (version 2) format
+  int readFromGmshASCII(std::string); // read from ascii (version 2) format
 };
 
 #endif

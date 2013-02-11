@@ -34,9 +34,4 @@ inline void require(bool requirement, std::string error = "Requirement failed!",
   }
 }
 
-inline bool fexists(std::string fileName) {
-  std::ifstream in(fileName.c_str());
-  return in;
-}
-
 #endif

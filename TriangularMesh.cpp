@@ -2,37 +2,60 @@
 #include "Node3D.h"
 #include "Require.h"
 #include "Convert.h"
-#include "Param.h"
 #include <ctime>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <cstring>
 
-TriangularMesh::TriangularMesh() {
-  nNodes = nTris = -1;
-}
+/**
+ * Constructor of TriangularMesh class
+ */
+TriangularMesh::TriangularMesh()
+  : nNodes(-1), nTris(-1)
+  { }
 
+/**
+ * Destructor of TriangularMesh class
+ */
 TriangularMesh::~TriangularMesh() {
   delete[] nodes;
   tris.clear();
 }
 
-int TriangularMesh::getnNodes() { return nNodes; }
+/**
+ * Get the number of mesh nodes
+ */
+int TriangularMesh::getnNodes() const { return nNodes; }
 
-int TriangularMesh::getnTris() { return nTris; }
+/**
+ * Get the number of mesh triangles
+ */
+int TriangularMesh::getnTris() const { return nTris; }
 
+/**
+ * Get the mesh node.
+ * \param[in] num - the number of node
+ */
 Node3D* TriangularMesh::getNode(int num) {
   require(num >= 0 && num < nNodes, "Incorrect input parameter!", "TriangularMesh::getNode");
   return &nodes[num];
 }
 
+/**
+ * Get the mesh triangle.
+ * \param[in] num - the number of triangle
+ */
 MeshTriangle3D* TriangularMesh::getTri(int num) {
   require(num >= 0 && num < nTris, "Incorrect input parameter!", "TriangularMesh::getTri");
   return &tris[num];
 }
 
-void TriangularMesh::readFromGmsh(std::string fileName) {
+/**
+ * Read mesh from Gmsh's .msh file.
+ * \param[in] fileName - the name of .msh file
+ */
+int TriangularMesh::readFromGmsh(std::string fileName) {
 
   clock_t t1, t2;
   t1 = clock();
@@ -44,25 +67,33 @@ void TriangularMesh::readFromGmsh(std::string fileName) {
 
   char string[256];
   fgets(string, 256, in); // $MeshFormat
-  require(!strncmp(string, "$MeshFormat", 11), "Incorrect file format ($MeshFormat)!", procName);
+  require(!strncmp(string, "$MeshFormat", 11), "Incorrect mesh format ($MeshFormat)!", procName);
 
   double version;
   int binary, dsize;
   fscanf(in, "%lf %d %d", &version, &binary, &dsize);
   fclose(in);
+
+  int ret = -1; // unsuccessful reading by default
   if (binary)
-    readFromGmshBinary(fileName); // read mesh in binary format
+    ret = readFromGmshBinary(fileName); // read mesh in binary format
   else
-    readFromGmshASCII(fileName); // read mesh in text format
+    ret = readFromGmshASCII(fileName); // read mesh in text format
 
   t2 = clock();
 
 #ifdef DEBUG
   std::cout << procName << ": time (sec) = " << (t2 - t1) / (double)CLOCKS_PER_SEC << std::endl;
 #endif
+
+  return ret;
 }
 
-void TriangularMesh::readFromGmshASCII(std::string fileName) {
+/**
+ * Read the mesh in Gmsh's ASCII (version 2) format.
+ * \param[in] fileName - the name of .msh file
+ */
+int TriangularMesh::readFromGmshASCII(std::string fileName) {
 
   std::string procName = "TriangularMesh::readFromGmshASCII";
 
@@ -136,9 +167,15 @@ void TriangularMesh::readFromGmshASCII(std::string fileName) {
   in.close();
 
   nTris = (int)tris.size();
+
+  return 0;
 }
 
-void TriangularMesh::readFromGmshBinary(std::string fileName) {
+/**
+ * Read the mesh in Gmsh's binary (version 2) format.
+ * \param[in] fileName - the name of .msh file
+ */
+int TriangularMesh::readFromGmshBinary(std::string fileName) {
 
   std::string procName = "TriangularMesh::readFromGmshBinary";
 
@@ -242,6 +279,8 @@ void TriangularMesh::readFromGmshBinary(std::string fileName) {
   fclose(in);
 
   nTris = (int)tris.size();
+
+  return 0;
 }
 
 // get the number of nodes that correspond the type of element
@@ -258,8 +297,7 @@ int TriangularMesh::getnElemNodes(int type) {
     n = 4;
     break;
   default:
-    std::string tmp = "Unknown type of the element " + d2s(type) + "!";
-    require(false, tmp, "TriangularMesh::getnElemNodes");
+    require(false, "Unknown type of the element " + d2s(type) + "!", "TriangularMesh::getnElemNodes");
   }
   return n;
 }

@@ -1,17 +1,29 @@
 #include "GeoTetrahedron.h"
+#include "Config.h"
+#include "Require.h"
+#include <fstream>
 
+/**
+ * Constructor of GeoTetrahedron class.
+ * Tetrahedron is defined by 4 vertices.
+ */
 GeoTetrahedron::GeoTetrahedron() {
   nVertices = 4;
   vertices = new Node3D[nVertices];
-  cpointsFileName = "cpoints/cpointsTetSurf.msh";
+  cpointsFileName = (std::string)CPOINTS_DIR + "/cpointsTetSurf.msh";
   templateName = "TetrahedronTemplate";
 }
 
+/**
+ * Destructor of GeoTetrahedron class.
+ */
 GeoTetrahedron::~GeoTetrahedron() {
   delete[] vertices;
 }
 
-// initialization of the vertices
+/**
+ * Initialization of the vertices
+ */
 void GeoTetrahedron::verticesInit() {
   // at first, we create standard tetrahedron with center at origin of coordinates
   double a = lengths[0]; // the length of tetrahedron edge
@@ -26,8 +38,10 @@ void GeoTetrahedron::verticesInit() {
   }
 }
 
-// calculate volume of the tetrahedron
-double GeoTetrahedron::volume() {
+/**
+ * Calculate the volume of the tetrahedron
+ */
+double GeoTetrahedron::volume() const {
   double x[4], y[4], z[4]; // Cartesian coordinates of the tetrahedron vertices
   for (int i = 0; i < nVertices; i++) {
     x[i] = vertices[i].getX();
@@ -38,11 +52,14 @@ double GeoTetrahedron::volume() {
                     y[0], y[1], y[2], y[3],
                     z[0], z[1], z[2], z[3],
                     1.0, 1.0, 1.0, 1.0); // some key determinant
-  double vol = fabs(detD) / 6.0; // tetrahedron volume
-  return vol;
+  return fabs(detD) / 6.0; // tetrahedron volume
 }
 
-// check if tetrahedron contains some point with accuracy in tolerance
+/**
+ * Check if tetrahedron contains some point with accuracy in tolerance
+ * \param[in] point - point that we want to check
+ * \param[in] tolerance - accuracy of checking
+ */
 bool GeoTetrahedron::hasPoint(Node3D *point, double tolerance) {
   double x[4], y[4], z[4]; // Cartesian coordinates of the tetrahedron vertices
   for (int i = 0; i < nVertices; i++) {
@@ -82,4 +99,27 @@ bool GeoTetrahedron::hasPoint(Node3D *point, double tolerance) {
     return true; // tetrahedron contains the point, because the sum of small volumes coicides with the main volume
 
   return false;
+}
+
+/**
+ * Create control points of unit tetrahedron: edges lengths are 1, center at origin
+ */
+void GeoTetrahedron::createUnitElementCPoints(double cl) {
+  std::string procName = "GeoTetrahedron::createUnitElementCPoints";
+  std::string geoName = "cpointsTetSurf.geo";
+  std::ofstream out(geoName.c_str());
+  frequire(out, geoName, procName);
+  out << "Include \"" << TEMPLATES_DIR + TEMPLATES_FILENAME << "\";\n";
+  out << "x0 = 0; y0 = 0; z0 = 0.612372;\n";
+  out << "x1 = 0; y1 = 0.57735; z1 = -0.204124;\n";
+  out << "x2 = 0.5; y2 = -0.288675; z2 = -0.204124;\n";
+  out << "x3 = -0.5; y3 = -0.288675; z3 = -0.204124;\n";
+  out << "cl = " << cl << ";\n";
+  out << "surfNumber = 1;\n";
+  out << "volNumber = 0;\n";
+  out << "Call " << templateName << ";\n";
+  out << "Physical Surface(3101) = { tetSurfaces[] };\n";
+  out.close();
+  std::string createMesh = GMSH_BIN + GMSH_BUILD_CPOINTS_OPTIONS + geoName + " -o " + cpointsFileName;
+  require(!system(createMesh.c_str()), "Mesh cannot be built!", procName);
 }

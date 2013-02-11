@@ -5,16 +5,19 @@
 
 class Node3D;
 
-// geometric shape - ellipsoid
+/**
+ * Ellipsoid is a geometric shape.
+ * This class is used for spheres also, because sphere is a particular case of ellipsoid (when all axis are equal).
+ */
 class Ellipsoid : public GeoShape {
-protected:
 public:
   Ellipsoid();
   ~Ellipsoid();
   
   void verticesInit(); // initialization of the vertices
-  double volume(); // calculate volume of the ellipsoid
+  double volume() const; // calculate volume of the ellipsoid
   bool hasPoint(Node3D*, double); // check if ellipsoid contains some point with accuracy in tolerance
+  void createUnitElementCPoints(double); // create control points of unit ellipsoid (i.e. sphere)
 };
 
 #endif

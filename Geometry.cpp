@@ -3,7 +3,7 @@
 #include "Ellipsoid.h"
 #include "Cylinder.h"
 #include "GeoTetrahedron.h"
-#include "Param.h"
+#include "Config.h"
 #include "Require.h"
 #include "Convert.h"
 #include "Mathematics.h"
@@ -11,7 +11,13 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <ctime>
+#include <boost/filesystem.hpp>
 
+/**
+ * Constructor of Geometry class.
+ * All n(umber)* parameters are initialized by 0.
+ * Lengths of master brick are initialized by -1.
+ */
 Geometry::Geometry() {
   nElements = 0; // the number of all inclusions
   nOrthoBricks = nRealOrthoBricks = 0;
@@ -22,17 +28,28 @@ Geometry::Geometry() {
   masterBrickLengths[0] = masterBrickLengths[1] = masterBrickLengths[2] = -1;
 }
 
+/**
+ * Destructor of Geometry class.
+ * The list of elements (inclusions) is cleaned.
+ */
 Geometry::~Geometry() {
   for (int i = 0; i < (int)elements.size(); i++)
     delete elements[i]; // free the memory
   elements.clear(); // clear the list of inclusions
 }
 
-// initialization.
-// superelement parameters: x0, y0, z0, lenX, lenY, lenZ, clMain
+/**
+ * Initialization of geometry when parameters of master brick is defined directly.
+ * \param[in] x0, y0, z0 - start point of brick
+ * \param[in] lenX, lenY, lenZ - lengths of sides
+ * \param[in] clMain - part of characteristic length of mesh in master brick
+ *            clMasterBrick = clMain * (lenX + lenY + lenZ) / 3.0
+ * \param[in] geoParamFileName - the name of xml file containing the parameters of geometry
+ * \param[in] geoFileName - the name of .geo file that will have the resulting geometry in Gmsh's compatible format
+ */
 int Geometry::init(double x0, double y0, double z0, \
-                   double lenX, double lenY, double lenZ, \
-                   std::string geoParamFileName, double clMain, std::string geofileName) {
+                   double lenX, double lenY, double lenZ, double clMain, \
+                   const std::string &geoParamFileName, const std::string &geofileName) {
 
   masterBrickStartPoint.init(x0, y0, z0); // start point of the master brick
   masterBrickLengths[0] = lenX; // lengths of sides of the master brick
@@ -44,8 +61,23 @@ int Geometry::init(double x0, double y0, double z0, \
   return init(geoParamFileName, geofileName);
 }
 
-int Geometry::init(std::string geoParamFileName, std::string geofileName) {
+/**
+ * Initialization of geometry based on xml file only.
+ * \param[in] geoParamFileName - the name of xml file containing the parameters of geometry
+ * \param[in] geoFileName - the name of .geo file that will have the resulting geometry in Gmsh's compatible format
+ */
+int Geometry::init(const std::string &geoParamFileName, const std::string &geofileName) {
   std::string procName = "Geometry::init";
+
+  // check that directory with control points files exists.
+  // if not we should create it
+  if (!boost::filesystem::exists(CPOINTS_DIR))
+    boost::filesystem::create_directory(CPOINTS_DIR);
+
+  // check that the templates file exists.
+  // if not we should create it
+  if (!boost::filesystem::exists(TEMPLATES_DIR + TEMPLATES_FILENAME))
+    printTemplates(TEMPLATES_DIR);
 
 #ifdef DEBUG
   std::cout << procName << " for parameters file " << geoParamFileName << " and resulting file " << geofileName << std::endl;
@@ -53,9 +85,9 @@ int Geometry::init(std::string geoParamFileName, std::string geofileName) {
 #endif
 
 //  srand() procedure Main class should call (Main - means that from which this procedure was called)
-//  srand(time(0) + (int)masterBrickLengths[0] + (int)masterBrickLengths[1] + (int)masterBrickLengths[2]);
+  srand(time(0) + (int)masterBrickLengths[0] + (int)masterBrickLengths[1] + (int)masterBrickLengths[2]);
 
-  require(fexists(geoParamFileName), "File " + geoParamFileName + " doesn't exist!", procName);
+  require(boost::filesystem::exists(geoParamFileName), "File " + geoParamFileName + " doesn't exist!", procName);
 
   // parse an xml file with parameters
   pugi::xml_document doc;
@@ -69,7 +101,7 @@ int Geometry::init(std::string geoParamFileName, std::string geofileName) {
 
   doc.traverse(*this); // walk through the file
 
-  nElements = elements.size();
+  nElements = elements.size(); // the number of created inclusions
 
 //  if (nElements == 0)
 //    return 1; // error
@@ -83,13 +115,16 @@ int Geometry::init(std::string geoParamFileName, std::string geofileName) {
   return 0; // all is good
 }
 
-// initialization of the master brick
+/**
+ * Initialization of the master brick.
+ * /param[in] node - node of xml tree containing parameters of master brick
+ */
 int Geometry::masterbrickInit(pugi::xml_node &node) {
   std::string procName = "Geometry::masterbrickInit";
 
   masterBrickStartPoint.init(0, 0, 0);
 
-  pugi::xml_attribute attr_x = node.attribute("lenX");
+  pugi::xml_attribute attr_x = node.attribute("lenX"); // get attributes from xml file
   pugi::xml_attribute attr_y = node.attribute("lenY");
   pugi::xml_attribute attr_z = node.attribute("lenZ");
   require(attr_x && attr_y && attr_z, "Unknown lengths of super brick!", procName);
@@ -104,7 +139,10 @@ int Geometry::masterbrickInit(pugi::xml_node &node) {
   return 0;
 }
 
-// tetrahedra initialization
+/**
+ * Tetrahedra initialization.
+ * \param[in] node - node of xml tree containing parameters of tetrahedra
+ */
 int Geometry::tetrahedraInit(pugi::xml_node &node) {
 
   std::string procName = "Geometry::tetrahedraInit";
@@ -225,7 +263,10 @@ int Geometry::tetrahedraInit(pugi::xml_node &node) {
   return 0; // all is good
 }
 
-// cylinders initialization
+/**
+ * Cylinders initialization.
+ * \param[in] node - node of xml tree containing parameters of cylinders
+ */
 int Geometry::cylindersInit(pugi::xml_node &node) {
 
   std::string procName = "Geometry::cylindersInit";
@@ -286,9 +327,6 @@ int Geometry::cylindersInit(pugi::xml_node &node) {
       rv[2] = rvector[2];
       break;
     case 0: // random vector
-      //rv[0] = randomBetween(0.0, masterBrickLengths[0]);
-      //rv[1] = randomBetween(0.0, masterBrickLengths[1]);
-      //rv[2] = randomBetween(0.0, masterBrickLengths[2]);
       rv[0] = randomBetween(0.0, 1.0);
       rv[1] = randomBetween(0.0, 1.0);
       rv[2] = randomBetween(0.0, 1.0);
@@ -355,14 +393,17 @@ int Geometry::cylindersInit(pugi::xml_node &node) {
   return 0; // all is good
 }
 
-// ellipsoids initialization
+/**
+ * Ellipsoids initialization.
+ * \param[in] node - node of xml tree containing parameters of ellipsoids
+ */
 int Geometry::ellipsoidsInit(pugi::xml_node &node) {
 
   std::string procName = "Geometry::ellipsoidsInit";
 
   getNumber(node, &nEllipsoids, procName); // get the number of ellipsoids
   int valueType = getValueType(node, procName); // get the type of values of all
-                                                // parameters: absolute (0) or relative (1) (exept cl, that is always absolute)
+                                                // parameters: absolute (0) or relative (1) (except cl, that is always absolute)
 
   // ellipsoid parameters
   double lenX[2], lenY[2], lenZ[2];
@@ -477,7 +518,10 @@ int Geometry::ellipsoidsInit(pugi::xml_node &node) {
   return 0; // all is good
 }
 
-// orthobricks initialization
+/**
+ * Orthobricks initialization.
+ * \param[in] node - node of xml tree containing parameters of orthobricks
+ */
 int Geometry::orthobricksInit(pugi::xml_node &node) {
 
   std::string procName = "Geometry::orthobricksInit";
@@ -594,12 +638,19 @@ int Geometry::orthobricksInit(pugi::xml_node &node) {
     }
     else
       nTries++; // regular unsuccessful attempt
+
+#ifdef DEBUG
+    std::cout << "center = " << orthobrick->getCenter()->getX() << ", " << orthobrick->getCenter()->getY() << ", " << orthobrick->getCenter()->getZ() << std::endl;
+#endif
   }
 
   return 0; // all is good
 }
 
-// spheres initialization
+/**
+ * Spheres initialization.
+ * \param[in] node - node of xml tree containing parameters of spheres
+ */
 int Geometry::spheresInit(pugi::xml_node &node) {
 
   std::string procName = "Geometry::spheresInit";
@@ -661,7 +712,10 @@ int Geometry::spheresInit(pugi::xml_node &node) {
   return 0; // all is good
 }
 
-// write geometry to the corresponding file
+/**
+ * Write geometry to the corresponding file.
+ * \param[in] fileName - the name of .geo file where the geometry will be saved
+ */
 void Geometry::writeResults(std::string fileName) {
 
   require(masterBrickLengths[0] > 0, "Super brick is not initialized! Please check the parameters file!", "Geometry::writeResults");
@@ -669,7 +723,7 @@ void Geometry::writeResults(std::string fileName) {
   std::ofstream out(fileName.c_str());
   frequire(out, fileName, "Geometry::writeResults");
   
-  out << "Include \"templates.geo\";\n\n";
+  out << "Include \"" << TEMPLATES_DIR + TEMPLATES_FILENAME << "\";\n\n";
   
   out << "x0 = " << masterBrickStartPoint.getX() << ";\n";
   out << "y0 = " << masterBrickStartPoint.getY() << ";\n";
@@ -689,20 +743,23 @@ void Geometry::writeResults(std::string fileName) {
   
   out << "vol = newv;\n";
   out << "Volume(vol) = { surfaceLoops[] };\n";
-  out << "Physical Surface(" << Param::LEFT_BOUNDARY << ") = { masterBrickLeftFace };\n";
-  out << "Physical Surface(" << Param::RIGHT_BOUNDARY << ") = { masterBrickRightFace };\n";
-  out << "Physical Surface(" << Param::FRONT_BOUNDARY << ") = { masterBrickFrontFace };\n";
-  out << "Physical Surface(" << Param::BACK_BOUNDARY << ") = { masterBrickBackFace };\n";
-  out << "Physical Surface(" << Param::BOTTOM_BOUNDARY << ") = { masterBrickBottomFace };\n";
-  out << "Physical Surface(" << Param::TOP_BOUNDARY << ") = { masterBrickTopFace };\n";
-  out << "Physical Surface(" << Param::INCL_SURFACE << ") = { orthoBrickSurfaces[], ellSurfaces[], cylinderSurfaces[], tetSurfaces[] };\n";
-  out << "Physical Volume(" << Param::MAIN_DOMAIN << ") = { vol };\n";
-  out << "Physical Volume(" << Param::INCLUSION_DOMAIN << ") = { inclVolumes[] };\n";
+  out << "Physical Surface(" << LEFT_BOUNDARY << ") = { masterBrickLeftFace };\n";
+  out << "Physical Surface(" << RIGHT_BOUNDARY << ") = { masterBrickRightFace };\n";
+  out << "Physical Surface(" << FRONT_BOUNDARY << ") = { masterBrickFrontFace };\n";
+  out << "Physical Surface(" << BACK_BOUNDARY << ") = { masterBrickBackFace };\n";
+  out << "Physical Surface(" << BOTTOM_BOUNDARY << ") = { masterBrickBottomFace };\n";
+  out << "Physical Surface(" << TOP_BOUNDARY << ") = { masterBrickTopFace };\n";
+  out << "Physical Surface(" << INCL_SURFACE << ") = { orthoBrickSurfaces[], ellSurfaces[], cylinderSurfaces[], tetSurfaces[] };\n";
+  out << "Physical Volume(" << MAIN_DOMAIN << ") = { vol };\n";
+  out << "Physical Volume(" << INCLUSION_DOMAIN << ") = { inclVolumes[] };\n";
 
   out.close();
 }
 
-// write geometry of empty superelement to the corresponding file
+/**
+ * Write geometry of empty superelement to the corresponding file.
+ * \param[in] fileName - the name of .geo file where the geometry will be saved
+ */
 void Geometry::writeEmptyMasterBrick(std::string fileName) {
 
   require(masterBrickLengths[0] > 0, "Super brick is not initialized! Please check the parameters file!", "Geometry::writeResults");
@@ -710,7 +767,7 @@ void Geometry::writeEmptyMasterBrick(std::string fileName) {
   std::ofstream out(fileName.c_str());
   frequire(out, fileName, "Geometry::writeEmptyMasterBrick");
   
-  out << "Include \"templates.geo\";\n\n";
+  out << "Include \"" << TEMPLATES_DIR + TEMPLATES_FILENAME << "\";\n\n";
   
   out << "x0 = " << masterBrickStartPoint.getX() << ";\n";
   out << "y0 = " << masterBrickStartPoint.getY() << ";\n";
@@ -723,20 +780,23 @@ void Geometry::writeEmptyMasterBrick(std::string fileName) {
   out << "volNumber = 0;\n";
   out << "Call MasterBrickTemplate;\n\n";
 
-  out << "Physical Surface(" << Param::LEFT_BOUNDARY << ") = { masterBrickLeftFace };\n";
-  out << "Physical Surface(" << Param::RIGHT_BOUNDARY << ") = { masterBrickRightFace };\n";
-  out << "Physical Surface(" << Param::FRONT_BOUNDARY << ") = { masterBrickFrontFace };\n";
-  out << "Physical Surface(" << Param::BACK_BOUNDARY << ") = { masterBrickBackFace };\n";
-  out << "Physical Surface(" << Param::BOTTOM_BOUNDARY << ") = { masterBrickBottomFace };\n";
-  out << "Physical Surface(" << Param::TOP_BOUNDARY << ") = { masterBrickTopFace };\n";
-  out << "Physical Volume(" << Param::MAIN_DOMAIN << ") = { masterBrickVolumes[volNumber] };\n";
+  out << "Physical Surface(" << LEFT_BOUNDARY << ") = { masterBrickLeftFace };\n";
+  out << "Physical Surface(" << RIGHT_BOUNDARY << ") = { masterBrickRightFace };\n";
+  out << "Physical Surface(" << FRONT_BOUNDARY << ") = { masterBrickFrontFace };\n";
+  out << "Physical Surface(" << BACK_BOUNDARY << ") = { masterBrickBackFace };\n";
+  out << "Physical Surface(" << BOTTOM_BOUNDARY << ") = { masterBrickBottomFace };\n";
+  out << "Physical Surface(" << TOP_BOUNDARY << ") = { masterBrickTopFace };\n";
+  out << "Physical Volume(" << MAIN_DOMAIN << ") = { masterBrickVolumes[volNumber] };\n";
 
   out.close();
 }
 
-// print Gmsh-templates to the file "templates.geo" in 'dir' directory
-void Geometry::printTemplates(std::string dir) {
-  std::string fileName = dir + "/templates.geo";
+/**
+ * Print Gmsh-templates to the file "templates.geo" in 'dir' directory
+ * \param[in] dir - the path to the "templates.geo" file
+ */
+void Geometry::printTemplates(const std::string &dir) {
+  std::string fileName = dir + "/" + TEMPLATES_FILENAME;
   std::cout << "  printTemplates" << std::endl;
   std::ofstream out(fileName.c_str());
   frequire(out, fileName, "Geometry::printTemplates");
@@ -1068,16 +1128,74 @@ void Geometry::printTemplates(std::string dir) {
   out.close();
 }
 
-int Geometry::getnOrthoBricks() { return nOrthoBricks; }
-int Geometry::getnRealOrthoBricks() { return nRealOrthoBricks; }
-int Geometry::getnCylinders() { return nCylinders; }
-int Geometry::getnRealCylinders() { return nRealCylinders; }
-int Geometry::getnEllipsoids() { return nEllipsoids; }
-int Geometry::getnRealEllipsoids() { return nRealEllipsoids; }
-int Geometry::getnSpheres() { return nSpheres; }
-int Geometry::getnRealSpheres() { return nRealSpheres; }
+/**
+ * @brief Geometry::getnOrthoBricks
+ * @return The number of orthobricks that we would like to have (what was written in xml file).
+ */
+int Geometry::getnOrthoBricks() const { return nOrthoBricks; }
 
-// to walk on xml document
+/**
+ * @brief Geometry::getnRealOrthoBricks
+ * @return The number of orthobricks that we really have. This number may differ from the one written in xml file,
+ * if the desire number is too big, and we can't find a place where to insert new inclusion.
+ */
+int Geometry::getnRealOrthoBricks() const { return nRealOrthoBricks; }
+
+/**
+ * @brief Geometry::getnCylinders
+ * @return The number of cylinders that we would like to have (what was written in xml file).
+ */
+int Geometry::getnCylinders() const { return nCylinders; }
+
+/**
+ * @brief Geometry::getnRealCylinders
+ * @return The number of cylinders that we really have. This number may differ from the one written in xml file,
+ * if the desire number is too big, and we can't find a place where to insert new inclusion.
+ */
+int Geometry::getnRealCylinders() const { return nRealCylinders; }
+
+/**
+ * @brief Geometry::getnEllipsoids
+ * @return The number of ellipsoids that we would like to have (what was written in xml file).
+ */
+int Geometry::getnEllipsoids() const { return nEllipsoids; }
+
+/**
+ * @brief Geometry::getnRealEllipsoids
+ * @return The number of ellipsoids that we really have. This number may differ from the one written in xml file,
+ * if the desire number is too big, and we can't find a place where to insert new inclusion.
+ */
+int Geometry::getnRealEllipsoids() const { return nRealEllipsoids; }
+
+/**
+ * @brief Geometry::getnSpheres
+ * @return The number of spheres that we would like to have (what was written in xml file).
+ */
+int Geometry::getnSpheres() const { return nSpheres; }
+
+/**
+ * @brief Geometry::getnRealSpheres
+ * @return The number of spheres that we really have. This number may differ from the one written in xml file,
+ * if the desire number is too big, and we can't find a place where to insert new inclusion.
+ */
+int Geometry::getnRealSpheres() const { return nRealSpheres; }
+
+/**
+ * @brief Geometry::getnTetrahedra
+ * @return The number of tetrahedra that we would like to have (what was written in xml file).
+ */
+int Geometry::getnTetrahedra() const { return nTetrahedra; }
+
+/**
+ * @brief Geometry::getnRealTetrahedra
+ * @return The number of tetrahedra that we really have. This number may differ from the one written in xml file,
+ * if the desire number is too big, and we can't find a place where to insert new inclusion.
+ */
+int Geometry::getnRealTetrahedra() const { return nRealTetrahedra; }
+
+/**
+ * To walk on xml document checking what type of inclusions we should create.
+ */
 bool Geometry::for_each(pugi::xml_node &node) {
 
   std::string geoType = (std::string)node.name(); // type of geometric shape
@@ -1103,7 +1221,13 @@ bool Geometry::for_each(pugi::xml_node &node) {
   return true;
 }
 
-// get the number of elements. it's necessary attribute
+/**
+ * Get the number of elements (of partiacular inclusion type).
+ * It's necessary attribute of inclusion in xml file.
+ * \param[in] node - reference to node of xml tree
+ * \param[out] number - the number itself (that follows from the name of function)
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 void Geometry::getNumber(pugi::xml_node &node, int *number, std::string procName) {
   pugi::xml_attribute attr = node.attribute("number"); // necessary attribute
   require(attr != 0, "There is no attribute 'number'!", procName);
@@ -1111,7 +1235,12 @@ void Geometry::getNumber(pugi::xml_node &node, int *number, std::string procName
   require(*number > 0, "The number is less than 1!", procName);
 }
 
-// get the type of values. it's optional attribute: absolute values by default
+/**
+ * Get the type of values (absolute or relative).
+ * It's optional attribute: absolute values are set by default
+ * \param[in] node - reference to node of xml tree
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 int Geometry::getValueType(pugi::xml_node &node, std::string procName) {
   pugi::xml_attribute attr = node.attribute("vtype"); // optional attribute
   int vType = 0; // absolute values by default
@@ -1126,7 +1255,16 @@ int Geometry::getValueType(pugi::xml_node &node, std::string procName) {
   return vType;
 }
 
-// get the length under different names. it's necessary attribute
+/**
+ * Get the length under different names.
+ * It's necessary attribute
+ * \param[in] node - reference to node of xml tree
+ * \param[in] lengthName - lengths might be called variously, so we need to know the name of attribute
+ * \param[out] lengths - the array of lengths
+ * \param[in] valueType - global type of values (absolute or relative)
+ * \param[in] superLength - the length of master brick
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 void Geometry::getLength(pugi::xml_node &node, std::string lengthName, double lengths[], \
                          int valueType, double superLength, std::string procName) {
   pugi::xml_node child = node.child(lengthName.c_str());
@@ -1168,11 +1306,16 @@ void Geometry::getLength(pugi::xml_node &node, std::string lengthName, double le
   }
 }
 
-// get the direction of rotation vector:
-// -2 - vector is not defined
-// -1 - vector is defined exactly (by components)
-// 0 - random direction
-// ( 1 | 2 | 3 ) - along ( x | y | z ) - direction
+/**
+ * Get the direction of rotation vector:
+ * -2 - vector is not defined
+ * -1 - vector is defined exactly (by components)
+ * 0 - random direction
+ * ( 1 | 2 | 3 ) - along ( x | y | z ) - direction
+ * \param[in] node - reference to node of xml tree
+ * \param[out] vector - rotation vector (array of components)
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 int Geometry::getRVec(pugi::xml_node &node, double vector[], std::string procName) {
   pugi::xml_node child = node.child("rvector");
   if (!child)
@@ -1197,9 +1340,14 @@ int Geometry::getRVec(pugi::xml_node &node, double vector[], std::string procNam
   return rv;
 }
 
-// get the values of angle of rotation.
-// we call this procedure only if rotation vector is defined,
-// so one can say that it's necessary attribute
+/**
+ * Get the values of angle of rotation.
+ * We call this procedure only if rotation vector is defined,
+ * so one can say that it's necessary attribute
+ * \param[in] node - reference to node of xml tree
+ * \param[out] angle - angle of rotation (it's array because angle might be random value, and we have to know the limits of the distribution)
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 void Geometry::getAngle(pugi::xml_node &node, double angle[], std::string procName) {
   pugi::xml_node child = node.child("angle");
   require(child, "There is no child 'angle'!", procName);
@@ -1230,8 +1378,12 @@ void Geometry::getAngle(pugi::xml_node &node, double angle[], std::string procNa
   }
 }
 
-// get characteristic length for mesh building
-// it's necessary value and always absolute (but really it becames relative in GeoShape.init procedure)
+/**
+ * Get characteristic length for mesh building.
+ * It's necessary value and always absolute (but really it becames relative in GeoShape.init procedure, see code)
+ * \param[in] node - reference to node of xml tree
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 double Geometry::getCL(pugi::xml_node &node, std::string procName) {
   pugi::xml_attribute attr = node.attribute("cl");
   require(attr, "There is no 'cl' attribute!", procName);
@@ -1240,7 +1392,17 @@ double Geometry::getCL(pugi::xml_node &node, std::string procName) {
   return cl;
 }
 
-// get new center of element
+/**
+ * Get the center of element.
+ * \param[in] node - reference to node of xml tree
+ * \param[in] nElements - the number of inclusions of this type (in one xml node)
+ * \param[in] valueType - global type of values (absolute or relative)
+ * \param[out] center - the center of element itself
+ * \param[in] startPoint - the start point of master brick
+ * \param[in] superLengths - the lengths of sides of master brick (array)
+ * \param[in] limits - the lengths of area taken by inclusion
+ * \param[in] procName - the name of procedure from where the function was called (for errors handling)
+ */
 void Geometry::getCenter(pugi::xml_node &node, int nElements, int valueType, Node3D *center, \
                          Node3D startPoint, double superLengths[], double limits[], std::string procName) {
   pugi::xml_node child = node.child("center");
@@ -1262,7 +1424,7 @@ void Geometry::getCenter(pugi::xml_node &node, int nElements, int valueType, Nod
   pugi::xml_attribute attr_z = child.attribute("z");
   // if all coordinates are defined and number of elements is more than 1, there is an error
   require(!(attr_x && attr_y && attr_z && nElements > 1), \
-          "Exact center could be defined only for one element (but here is " + d2s(nElements) + " ones)!", procName);
+          "Exact center could be defined only for one element (but here are " + d2s(nElements) + " ones)!", procName);
 
   pugi::xml_attribute attr_vt = child.attribute("vtype"); // value type specifically for the center point. optional - valueType by default
   int vt = valueType; // general type of values by default
@@ -1276,11 +1438,16 @@ void Geometry::getCenter(pugi::xml_node &node, int nElements, int valueType, Nod
   }
 
   if (attr_x) // if x-coordinate is defined
-    xc = (vt ? startPoint.getX() + attr_x.as_int() * 0.01 * superLengths[0] : attr_x.as_double());
+    xc = (vt ? startPoint.getX() + attr_x.as_double() * 0.01 * superLengths[0] : attr_x.as_double());
   if (attr_y) // if y-coordinate is defined
-    yc = (vt ? startPoint.getY() + attr_y.as_int() * 0.01 * superLengths[1] : attr_y.as_double());
+    yc = (vt ? startPoint.getY() + attr_y.as_double() * 0.01 * superLengths[1] : attr_y.as_double());
   if (attr_z) // if z-coordinate is defined
-    zc = (vt ? startPoint.getZ() + attr_z.as_int() * 0.01 * superLengths[2] : attr_z.as_double());
+    zc = (vt ? startPoint.getZ() + attr_z.as_double() * 0.01 * superLengths[2] : attr_z.as_double());
 
   center->init(xc, yc, zc); // center initialization
+}
+
+std::string getLibraryVersion() {
+  //return d2s(mixture_VERSION_MAJOR) + "." + d2s(mixture_VERSION_MINOR) + "." + d2s(mixture_VERSION_PATCH);
+  return (std::string)MIXTURE_VERSION_MAJOR + "." + (std::string)MIXTURE_VERSION_MINOR + "." + (std::string)MIXTURE_VERSION_PATCH;
 }

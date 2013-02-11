@@ -6,6 +6,10 @@
 #include <string>
 #include <stdexcept>
 
+/**
+ * Conversion of integer and float point numbers to string
+ */
+
 class BadConversion : public std::runtime_error {
 public:
   BadConversion(std::string const& s)
@@ -13,7 +17,9 @@ public:
   { }
 };
 
-// convert data to string
+/**
+ * Convert data of double-type to string
+ */
 inline std::string d2s(double x, bool scientific = false, int precision = 6) {
   std::ostringstream o;
   if (scientific) {
@@ -21,14 +27,17 @@ inline std::string d2s(double x, bool scientific = false, int precision = 6) {
     o.precision(precision);
   }
   if (!(o << x))
-    throw BadConversion("d2s(double)");
+    throw BadConversion("Bad conversion from (double) to (string)!");
   return o.str();
 }
 
+/**
+ * Convert data of integer-type to string
+ */
 inline std::string d2s(int x) {
   std::ostringstream o;
   if (!(o << x))
-    throw BadConversion("d2s(int)");
+    throw BadConversion("Bad conversion from (int) to (string)!");
   return o.str();
 }
 

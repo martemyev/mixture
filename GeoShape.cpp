@@ -3,8 +3,17 @@
 #include "TriangularMesh.h"
 #include "MeshTriangle3D.h"
 #include <iostream>
+#include <boost/filesystem.hpp>
 
-void GeoShape::init(Node3D &cen, double len[], double rvec[], double an, double chalen) {
+/**
+ * Initialization of geometric shape
+ * \param[in] cen - the center of shape
+ * \param[in] len - lengths of shape
+ * \param[in] rvec - rotation vector
+ * \param[in] an - angle of rotation
+ * \param[in] chalen - characteristic length
+ */
+void GeoShape::init(const Node3D &cen, double len[], double rvec[], double an, double chalen) {
   center = cen;
   for (int i = 0; i < 3; i++) {
     lengths[i] = len[i];
@@ -25,18 +34,22 @@ void GeoShape::init(Node3D &cen, double len[], double rvec[], double an, double 
   // initialization of the inverse transformation matrix
   tInvMatInit();
   
-#ifdef DEBUG
+//#ifdef DEBUG
 //  checkTMatrices();
-#endif
+//#endif
 
   // initialization of the vertices must be realized in derived class
   verticesInit();
   
   // initialization of the control points
+  if (!boost::filesystem::exists(cpointsFileName))
+    createUnitElementCPoints(0.1); // if there is no file with control points we must create it (parameter is a characteristic length of mesh)
   cpointsInit(cpointsFileName);
 }
 
-// initialization of the transformation matrix
+/**
+ * Initialization of the transformation matrix
+ */
 void GeoShape::tMatrixInit() {
   /*
       / xx(1-c)+c   xy(1-c)-zs  xz(1-c)+ys  h \
@@ -76,7 +89,9 @@ void GeoShape::tMatrixInit() {
   tMatrix[3][3] = 1.0;
 }
 
-// initialization of the inverse transformation matrix
+/**
+ * Initialization of the inverse transformation matrix
+ */
 void GeoShape::tInvMatInit() {
   /*
       /    |   \
@@ -113,7 +128,9 @@ void GeoShape::tInvMatInit() {
   tInvMat[3][3] = 1.0;
 }
 
-// check transformation and its inverse matrices
+/**
+ * Check transformation and its inverse matrices
+ */
 void GeoShape::checkTMatrices() {
   std::cout << "GeoShape::checkTMatrices\n";
   for (int i = 0; i < 4; i++) {
@@ -128,7 +145,11 @@ void GeoShape::checkTMatrices() {
   }
 }
 
-// transformation matrix multiplies on vector of coordinates to get new coordinates
+/**
+ * Transformation matrix multiplies on vector of coordinates to get new coordinates
+ * \param[in] from - array of coordinates that we need to transform
+ * \param[out] to - array of resulting coordinates
+ */
 void GeoShape::toNewCoord(double from[], double to[]) {
   for (int i = 0; i < 4; i++) {
     to[i] = 0.0;
@@ -137,7 +158,11 @@ void GeoShape::toNewCoord(double from[], double to[]) {
   }
 }
 
-// inverse transformation matrix multiplies on vector of coordinates to get "old" coordinates
+/**
+ * Inverse transformation matrix multiplies on vector of coordinates to get "old" coordinates
+ * \param[in] from - array of coordinates that we need to transform
+ * \param[out] to - array of resulting coordinates
+ */
 void GeoShape::toOldCoord(double from[], double to[]) {
   for (int i = 0; i < 4; i++) {
     to[i] = 0.0;
@@ -146,47 +171,74 @@ void GeoShape::toOldCoord(double from[], double to[]) {
   }
 }
 
-// get the center of shape
+/**
+ * Get the center of shape
+ */
 Node3D* GeoShape::getCenter() { return &center; }
 
-// get the number of vertices
-int GeoShape::getnVertices() { return nVertices; }
+/**
+ * Get the number of vertices
+ */
+inline int GeoShape::getnVertices() const { return nVertices; }
 
-// get some vertex of shape
-Node3D* GeoShape::getVertex(int num) {
+/**
+ * Get some vertex of shape.
+ * \param[in] num - the number of vertex
+ */
+inline Node3D* GeoShape::getVertex(int num) {
   require(num >= 0 && num < nVertices, "Incorrect input parameter!", "GeoShape::getVertex");
   return &vertices[num];
 }
 
-// get some length
-double GeoShape::getLen(int num) {
+/**
+ * Get some length.
+ * \param[in] num - what length do you want
+ */
+inline double GeoShape::getLen(int num) const {
   require(num >= 0 && num < 3, "Incorrect input parameter!", "GeoShape::getLen");
   return lengths[num];
 }
 
-// get some component of rotation vector
-double GeoShape::getRVec(int num) {
+/**
+ * Get some component of rotation vector
+ * \param[in] num - the number of component
+ */
+inline double GeoShape::getRVec(int num) const {
   require(num >= 0 && num < 3, "Incorrect input parameter!", "GeoShape::getRVec");
   return rvector[num];
 }
 
-// get the angle of rotation
-double GeoShape::getAngle() { return angle; }
+/**
+ * Get the angle of rotation
+ */
+inline double GeoShape::getAngle() const { return angle; }
 
-// get absolute characteristic value
-double GeoShape::getCL() { return cl; }
+/**
+ * Get absolute characteristic value
+ */
+inline double GeoShape::getCL() const { return cl; }
 
-// get the number of control points
-int GeoShape::getnControlPoints() { return nControlPoints; }
+/**
+ * Get the number of control points
+ */
+inline int GeoShape::getnControlPoints() const { return nControlPoints; }
 
-// get control point
-Node3D* GeoShape::getControlPoint(int num) {
+/**
+ * Get control point.
+ * \param[in] num - the number of control point
+ */
+inline Node3D* GeoShape::getControlPoint(int num) const {
   require(num >= 0 && num < nControlPoints, "Incorrect input parameter!", "GeoShape::getControlPoint");
   return &controlPoints[num];
 }
 
-// after rotation minimal and maximal coordinates of shape change,
-// therefore we need a procedure to define new limits of shape
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \param[out] min - array of minimal limits
+ * \param[out] max - array of maximal limits
+ */
 void GeoShape::getLimits(bool extendedShape, double min[], double max[]) {
   Node3D *array; // array of nodes (vertices or controlPoints)
   int dim; // dimension of array of nodes
@@ -214,57 +266,92 @@ void GeoShape::getLimits(bool extendedShape, double min[], double max[]) {
     if (z > max[2]) max[2] = z;
   }
 }
+
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \return x-component of minimal limit
+ */
 double GeoShape::getMinX(bool extendedShape) {
   double min[3], max[3];
   getLimits(extendedShape, min, max);
   return min[0];
 }
+
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \return x-component of maximal limit
+ */
 double GeoShape::getMaxX(bool extendedShape) {
   double min[3], max[3];
   getLimits(extendedShape, min, max);
   return max[0];
 }
+
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \return y-component of minimal limit
+ */
 double GeoShape::getMinY(bool extendedShape) {
   double min[3], max[3];
   getLimits(extendedShape, min, max);
   return min[1];
 }
+
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \return y-component of maximal limit
+ */
 double GeoShape::getMaxY(bool extendedShape) {
   double min[3], max[3];
   getLimits(extendedShape, min, max);
   return max[1];
 }
+
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \return z-component of minimal limit
+ */
 double GeoShape::getMinZ(bool extendedShape) {
   double min[3], max[3];
   getLimits(extendedShape, min, max);
   return min[2];
 }
+
+/**
+ * After rotation minimal and maximal coordinates of shape change,
+ * therefore we need to define new limits of shape
+ * \param[in] extendedShape - use additional layer to define new limits (true) or define real limits (false)
+ * \return z-component of maximal limit
+ */
 double GeoShape::getMaxZ(bool extendedShape) {
   double min[3], max[3];
   getLimits(extendedShape, min, max);
   return max[2];
 }
 
-// initialization of the vertices
-//void GeoShape::verticesInit() {
-//  require(false, "Vertices are not initialized for this instance of GeoShape class!", "GeoShape::verticesInit");
-//}
-
-// calculate volume of the shape
-//double GeoShape::volume() {
-//  require(false, "Volume couldn't be calculated for this instance of GeoShape class!", "GeoShape::volume");
-//  return 0;
-//}
-
-// check the intersection with some outside bigger box (superelement)
+/**
+ * Check the intersection with some outside bigger box (superelement)
+ * \param[in] startPoint - start point of master brick
+ * \param[in] sidesLen - lengths of sides of master brick
+ */
 bool GeoShape::checkIntersection(Node3D &startPoint, double sidesLen[]) {
   // superelement limits
-  double x0 = startPoint.getX();
-  double y0 = startPoint.getY();
-  double z0 = startPoint.getZ();
-  double x1 = x0 + sidesLen[0];
-  double y1 = y0 + sidesLen[1];
-  double z1 = z0 + sidesLen[2];
+  const double x0 = startPoint.getX();
+  const double y0 = startPoint.getY();
+  const double z0 = startPoint.getZ();
+  const double x1 = x0 + sidesLen[0];
+  const double y1 = y0 + sidesLen[1];
+  const double z1 = z0 + sidesLen[2];
 
   // limits of extended shape
   double min[3], max[3];
@@ -283,7 +370,10 @@ bool GeoShape::checkIntersection(Node3D &startPoint, double sidesLen[]) {
   return false; // there is no intersection
 }
 
-// check the intersection with another geometric shape
+/**
+ * Check the intersection with another geometric shape
+ * \param[in] sh - another geometric shape
+ */
 bool GeoShape::checkIntersection(GeoShape *sh) {
   // to check this intersection we need to
   // have an array of points (control points)
@@ -309,26 +399,27 @@ bool GeoShape::checkIntersection(GeoShape *sh) {
   return false; // there is no intersection
 }
 
-// check if the shape contains the point
-//bool GeoShape::hasPoint(Node3D *point, double tolerance) {
-//  require(false, "This method is not realized in this class!", "GeoShape::hasPoint");
-//  return false;
-//}
-
-// initialization of the control points
+/**
+ * \brief Initialization of the control points.
+ * \param[in] masterElementFileName - the name of .msh file where control points are saved.
+ * For every shape we should have such file.
+ * .msh file is defined for standard shape only (i.e. for sphere: diameter = 1, center at (0, 0, 0))
+ */
 void GeoShape::cpointsInit(std::string masterElementFileName) {
   // NOTE! file with control points (masterElementFileName) MUST exist for correct calculation.
   // file with control points contains the mesh of unit shape,
   // i.e. lengths[] = { 1, 1, 1 }, and with a center at the origin of coordinates
   
-  require(fexists(masterElementFileName), "File with control points '" + masterElementFileName + "' doesn't exist!", "GeoShape::cpointsInit");
+  require(boost::filesystem::exists(masterElementFileName),
+          "File with control points '" + masterElementFileName + "' doesn't exist!" + \
+          "You can create it using static function 'createUnitElementCPoints'.", "GeoShape::cpointsInit");
   
   TriangularMesh sm; // mesh containing shape triangulation
   sm.readFromGmsh(masterElementFileName); // read mesh from file
   
   int nMeshNodes = sm.getnNodes(); // the number of mesh nodes
 
-  nControlPoints = 2 * nMeshNodes; // the number of control points is in 2 times more than the mesh number
+  nControlPoints = 2 * nMeshNodes; // the number of control points is in 2 times more than the number of mesh nodes
   controlPoints = new Node3D[nControlPoints];
   
   double coord[4], coord_new[4];
@@ -355,7 +446,11 @@ void GeoShape::cpointsInit(std::string masterElementFileName) {
 #endif
 }
 
-// print control points to Gmsh file
+/**
+ * Print control points to Gmsh file.
+ * \param[in] fileName - the name of file for writing
+ * \param[in] mesh - the mesh from file with control points of unit shape
+ */
 void GeoShape::printControlPoints(std::string fileName, TriangularMesh *mesh) {
   std::ofstream out(fileName.c_str());
   frequire(out, fileName, "GeoShape::printControlPoints");
@@ -382,7 +477,10 @@ void GeoShape::printControlPoints(std::string fileName, TriangularMesh *mesh) {
   out.close();
 }
 
-// translate the shape to new place in such a manner that the center would equal to new point
+/**
+ * Translate the shape to new place in such a manner that the center would equal to new point.
+ * \param[in] cen - new center
+ */
 void GeoShape::translate(Node3D &cen) {
   // lengths, rotation vector, angle and characteristic length are the same.
     
@@ -406,7 +504,11 @@ void GeoShape::translate(Node3D &cen) {
   cpointsInit(cpointsFileName);
 }
 
-// print information about geometric shape for Gmsh
+/**
+ * Print information about geometric shape for Gmsh
+ * \param[in] surfNumber - the number of surface
+ * \param[in] volNumber - the number of volume
+ */
 std::string GeoShape::printGeo(int surfNumber, int volNumber) {
   std::string str = "";
   for (int i = 0; i < nVertices; i++)

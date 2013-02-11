@@ -6,8 +6,15 @@
 #include <vector>
 #include "pugixml.hpp"
 
-#define MARGIN 0.5 // margin in percents relatively length of superelement side
-#define N_TRIES_TO_CREATE_ELEMENT 10 // we try several times to create an element, because new element could intersect the previous one
+/**
+ * Margin in percents relatively length of superelement side.
+ */
+#define MARGIN 0.5
+
+/**
+ * We try several times to create an element, because new element can intersect the previous ones.
+ */
+#define N_TRIES_TO_CREATE_ELEMENT 10
 
 class Geometry : public pugi::xml_tree_walker { // xml_tree_walker need to walk through parameter file
 private:
@@ -60,20 +67,21 @@ public:
   Geometry();
   ~Geometry();
   
-  int init(double, double, double, double, double, double, std::string, double, std::string); // initialization
-  int init(std::string, std::string); // initialization
-  static void printTemplates(std::string); // print Gmsh-templates to the file
+  int init(double, double, double, double, double, double, double,
+           const std::string&, const std::string&); // initialization
+  int init(const std::string&, const std::string&); // initialization
+  static void printTemplates(const std::string&); // print Gmsh-templates to the file
   
-  int getnOrthoBricks();
-  int getnRealOrthoBricks();
-  int getnCylinders();
-  int getnRealCylinders();
-  int getnEllipsoids();
-  int getnRealEllipsoids();
-  int getnSpheres();
-  int getnRealSpheres();
-  int getnTetrahedra();
-  int getnRealTetrahedra();
+  int getnOrthoBricks() const;
+  int getnRealOrthoBricks() const;
+  int getnCylinders() const;
+  int getnRealCylinders() const;
+  int getnEllipsoids() const;
+  int getnRealEllipsoids() const;
+  int getnSpheres() const;
+  int getnRealSpheres() const;
+  int getnTetrahedra() const;
+  int getnRealTetrahedra() const;
 
 };
 #endif

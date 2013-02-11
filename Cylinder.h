@@ -5,16 +5,18 @@
 
 class Node3D;
 
-// geometric shape - cylinder
+/**
+ * Cylinder is a geometric shape
+ */
 class Cylinder : public GeoShape {
-protected:
 public:
   Cylinder();
   ~Cylinder();
-  
+
   void verticesInit(); // initialization of the vertices
-  double volume(); // calculate volume of the cylinder
+  double volume() const; // calculate volume of the cylinder
   bool hasPoint(Node3D*, double); // check the containing of the point
+  void createUnitElementCPoints(double); // create control points of unit cylinder
 };
 
 #endif

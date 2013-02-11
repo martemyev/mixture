@@ -7,8 +7,11 @@
 #include "Mathematics.h"
 #include <iostream>
 
-#define ORDERED_TRI3D_VERTICES
+#define ORDERED_TRI3D_VERTICES // triangle vertices are ordered
 
+/**
+ * Triangle for meshes
+ */
 class MeshTriangle3D {
 private:
 

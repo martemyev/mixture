@@ -3,17 +3,18 @@
 
 #include <iostream>
 
-// node in 3D space
+/**
+ * Node in 3D space
+ */
 class Node3D {
 protected:
   double x, y, z; // Cartesian coordinates
   int number; // the number of node
 
 public:
-  Node3D() {
-    x = y = z = 0.0;
-    number = -1;
-  }
+  Node3D()
+    : x(0), y(0), z(0), number(-1)
+  { }
 
   Node3D(const Node3D &n) {
     x = n.x;
@@ -35,6 +36,7 @@ public:
   double getZ() const { return z; } // get Z-coordinate
   int getNumber() const { return number; } // get the number of node
 
+  // initialize coordinates and a number of the node
   void init(double _x, double _y, double _z, int _number = -1) {
     x = _x;
     y = _y;
@@ -42,6 +44,7 @@ public:
     number = _number;
   }
 
+  // initialize coordinates (by array) and a number of the node
   void init(double coord[], int num = -1) {
     init(coord[0], coord[1], coord[2], num);
   }
