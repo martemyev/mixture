@@ -4,7 +4,7 @@ project(mixture)
 # --- set version ---
 set(mixture_VERSION_MAJOR 2)
 set(mixture_VERSION_MINOR 4)
-set(mixture_VERSION_PATCH 2)
+set(mixture_VERSION_PATCH 3)
 
 # --- necessary paths and options ---
 set(gmsh_BIN gmsh) # path to Gmsh binary file
