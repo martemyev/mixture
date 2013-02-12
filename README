@@ -8,7 +8,10 @@ Linux
   mkdir build
 3. Go to 'build' directory
   cd build
-4. Start CMake to configure the project (note that CMakeLists.txt file with instructions to CMake is in parent directory, so we need to point this out)
+4. Start CMake to configure the project (note that CMakeLists.txt file with instructions for CMake is in parent directory, so we need to point this out)
   cmake ..
 5. Build the library
   make
+6. [optional] If doxygen is installed on your system, you can generate documentation just typing
+  make doc
+  After that find the documentation in html format in 'mixdir/doc/html' directory.

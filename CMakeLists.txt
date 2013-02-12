@@ -27,41 +27,15 @@ add_definitions(-g)
 #endif(Boost_FOUND)
 
 # --- sources ---
-set(SOURCES_DIR ./sources)
+set(SOURCES_DIR ${PROJECT_SOURCE_DIR}/sources)
 aux_source_directory(${SOURCES_DIR} SOURCES_LIST)
 #message("SOURCES_LIST = ${SOURCES_LIST}")
 
-#set(SOURCES_LIST
-#      Cylinder.cpp
-#      Ellipsoid.cpp
-#      Geometry.cpp
-#      GeoShape.cpp
-#      GeoTetrahedron.cpp
-#      OrthoBrick.cpp
-#      pugixml.cpp
-#      TriangularMesh.cpp)
-
 # --- headers ---
-set(HEADERS_DIR ./headers)
+set(HEADERS_DIR ${PROJECT_SOURCE_DIR}/headers)
 include_directories(${HEADERS_DIR})
-file(GLOB HEADERS_LIST "${HEADERS_DIR}/*.h*")
+file(GLOB HEADERS_LIST "${HEADERS_DIR}/*.h" "${HEADERS_DIR}/*.hpp")
 #message("HEADERS_LIST = ${HEADERS_LIST}")
-
-#set(HEADERS_LIST
-#      Convert.h
-#      Cylinder.h
-#      Ellipsoid.h
-#      Geometry.h
-#      GeoShape.h
-#      GeoTetrahedron.h
-#      Mathematics.h
-#      MeshTriangle3D.h
-#      Node3D.h
-#      OrthoBrick.h
-#      pugiconfig.hpp
-#      pugixml.hpp
-#      Require.h
-#      TriangularMesh.h)
 
 # --- write the variables initialized here to Config.h file ---
 configure_file(
@@ -74,3 +48,26 @@ add_library(${PROJECT_NAME} ${HEADERS_LIST} ${SOURCES_LIST})
 #if(Boost_FOUND)
 #  target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 #endif(Boost_FOUND)
+
+# --- packaging of the library ---
+# -- make package --
+set(CPACK_PACKAGE_VERSION_MAJOR "${mixture_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${mixture_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${mixture_VERSION_PATCH}")
+set(CPACK_GENERATOR "TGZ")
+# -- make package_source --
+set(CPACK_SOURCE_GENERATOR "TGZ")
+set(CPACK_SOURCE_IGNORE_FILES "./*.user;build;doc;cpoints;.git;.gitignore")
+include(CPack)
+
+# --- autodocumentation using doxygen ---
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  configure_file(
+    "${CMAKE_SOURCE_DIR}/Doxyfile.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
+  add_custom_target(doc COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+else(DOXYGEN_FOUND)
+  message("WARNING: Doxygen is not found - Autodocumentation will not be created")
+endif(DOXYGEN_FOUND)
+
