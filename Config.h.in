@@ -1,0 +1,30 @@
+// define version of the library using CMake
+#define MIXTURE_VERSION_MAJOR "@mixture_VERSION_MAJOR@"
+#define MIXTURE_VERSION_MINOR "@mixture_VERSION_MINOR@"
+#define MIXTURE_VERSION_PATCH "@mixture_VERSION_PATCH@"
+
+// path to Gmsh binary file
+const std::string GMSH_BIN = "@gmsh_BIN@";
+
+// Gmsh's options to build cpoints files
+const std::string GMSH_BUILD_CPOINTS_OPTIONS = " @gmsh_build_cpoints_options@ ";
+
+// path to directory with .msh files containing control points
+const std::string CPOINTS_DIR = "@cpoints_DIR@";
+
+// path to Gmsh's templates file
+const std::string TEMPLATES_DIR = "@templates_DIR@/";
+
+// Gmsh's templates filename
+const std::string TEMPLATES_FILENAME = "templates.geo";
+
+// define numbers of physical entities for Gmsh
+#define LEFT_BOUNDARY 3001
+#define RIGHT_BOUNDARY 3002
+#define FRONT_BOUNDARY 3003
+#define BACK_BOUNDARY 3004
+#define BOTTOM_BOUNDARY 3005
+#define TOP_BOUNDARY 3006
+#define INCL_SURFACE 3021
+#define MAIN_DOMAIN 4001
+#define INCLUSION_DOMAIN 4002
