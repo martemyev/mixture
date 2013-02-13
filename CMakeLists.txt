@@ -1,5 +1,19 @@
 cmake_minimum_required(VERSION 2.8)
-project(mixture)
+
+# --- compiler options ---
+# taken from Gmsh's CMakeLists.txt:
+# if CMAKE_BUILD_TYPE is specified use it; otherwise set the default
+# build type to "RelWithDebInfo" ("-O2 -g" with gcc) prior to calling
+# project()
+if(DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose build type")
+else(DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose build type")
+endif(DEFINED CMAKE_BUILD_TYPE)
+message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
+# --- project ---
+project(mixture CXX)
 
 # --- set version ---
 set(mixture_VERSION_MAJOR 2)
@@ -7,13 +21,10 @@ set(mixture_VERSION_MINOR 4)
 set(mixture_VERSION_PATCH 3)
 
 # --- necessary paths and options ---
-set(gmsh_BIN gmsh) # path to Gmsh binary file
-set(gmsh_build_cpoints_options "-2 -bin -algo front3d") # Gmsh meshing options
-set(cpoints_DIR ${PROJECT_SOURCE_DIR}/cpoints) # path to directory with cpoints (control points) files
-set(templates_DIR ${PROJECT_SOURCE_DIR}) # path to directory where the templates.geo file is
-
-# --- compiler options ---
-add_definitions(-g)
+set(gmsh_BIN "gmsh" CACHE PATH "Path to Gmsh binary file")
+set(gmsh_build_cpoints_options "-2 -bin -algo front3d" CACHE STRING "Gmsh meshing options")
+set(cpoints_DIR ${PROJECT_SOURCE_DIR}/cpoints CACHE PATH "Path to directory with cpoints (control points) files")
+set(templates_DIR ${PROJECT_SOURCE_DIR} CACHE PATH "Path to directory where the templates.geo file is")
 
 #set(Boost_USE_STATIC_LIBS ON)
 #set(Boost_USE_STATIC_LINK ON)

@@ -75,12 +75,12 @@ int TriangularMesh::readFromGmsh(std::string fileName) {
   frequire(in, fileName, procName);
 
   char string[256];
-  fgets(string, 256, in); // $MeshFormat
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // $MeshFormat
   require(!strncmp(string, "$MeshFormat", 11), "Incorrect mesh format ($MeshFormat)!", procName);
 
   double version;
-  int binary, dsize;
-  fscanf(in, "%lf %d %d", &version, &binary, &dsize);
+  int binary, dsize, scn;
+  scn = fscanf(in, "%lf %d %d", &version, &binary, &dsize);
   fclose(in);
 
   int ret = -1; // unsuccessful reading by default
@@ -196,51 +196,51 @@ int TriangularMesh::readFromGmshBinary(std::string fileName) {
   frequire(in, fileName, procName);
 
   char string[256];
-  fgets(string, 256, in); // $MeshFormat
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // $MeshFormat
   require(!strncmp(string, "$MeshFormat", 11), "Incorrect file format ($MeshFormat)!", procName);
 
   double version;
-  int binary, dsize;
-  fscanf(in, "%lf %d %d", &version, &binary, &dsize);
+  int binary, dsize, scn;
+  scn = fscanf(in, "%lf %d %d", &version, &binary, &dsize);
   require(binary == 1, "This mesh file is not in binary format!", procName);
 
-  fgets(string, 256, in); // the rest of the line (the symbol of new line)
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // the rest of the line (the symbol of new line)
 
   int one;
-  fread(&one, sizeof(int), 1, in);
+  scn = fread(&one, sizeof(int), 1, in);
   require(one == 1, "Incorrect file format (binary one is wrong)!", procName);
 
-  fgets(string, 256, in); // the rest of the line
-  fgets(string, 256, in); // $EndMeshFormat
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // the rest of the line
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // $EndMeshFormat
   require(!strncmp(string, "$EndMeshFormat", 14), "Incorrect file format ($EndMeshFormat)!", procName);
 
-  fgets(string, 256, in); // $Nodes
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // $Nodes
   require(!strncmp(string, "$Nodes", 6), "Incorrect file format ($Nodes)!", procName);
 
-  fscanf(in, "%d", &nNodes);
-  fgets(string, 256, in); // the rest of the line
+  scn = fscanf(in, "%d", &nNodes);
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // the rest of the line
 
   nodes = new Node3D[nNodes];
 
   int number;
   double coordinates[3];
   for (int i = 0; i < nNodes; i++) {
-    fread(&number, sizeof(int), 1, in); // the number of node
+    scn = fread(&number, sizeof(int), 1, in); // the number of node
     number--; // Gmsh numerates the nodes from 1
     require(number == i, "The sequence of numbers of nodes is not dense!", procName);
-    fread(coordinates, sizeof(double), 3, in); // Cartesian coordinates
+    scn = fread(coordinates, sizeof(double), 3, in); // Cartesian coordinates
     nodes[i].init(coordinates, number);
   }
 
-  fgets(string, 256, in); // the rest of the line
-  fgets(string, 256, in); // $EndNodes
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // the rest of the line
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // $EndNodes
   require(!strncmp(string, "$EndNodes", 9), "Incorrect file format ($EndNodes)!", procName);
-  fgets(string, 256, in); // $Elements
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // $Elements
   require(!strncmp(string, "$Elements", 9), "Incorrect file format ($Elements)!", procName);
 
   int nElements;
-  fscanf(in, "%d", &nElements);
-  fgets(string, 256, in); // the rest of the line
+  scn = fscanf(in, "%d", &nElements);
+  require(fgets(string, 256, in) != NULL, "fgets returned NULL", procName); // the rest of the line
 
   int nElemPart = 0;
   int header[3], elType, amount, nTags;
@@ -249,7 +249,7 @@ int TriangularMesh::readFromGmshBinary(std::string fileName) {
   int *nod;
 
   while (nElemPart < nElements) {
-    fread(header, sizeof(int), 3, in);
+    scn = fread(header, sizeof(int), 3, in);
     elType = header[0]; // the type of the element
     amount = header[1]; // the number of the elements of this type
     nTags = header[2]; // the number of tags
@@ -262,7 +262,7 @@ int TriangularMesh::readFromGmshBinary(std::string fileName) {
     MeshTriangle3D tr;
 
     for (int oneElem = 0; oneElem < amount; oneElem++) {
-      fread(data, sizeof(int), nData, in);
+      scn = fread(data, sizeof(int), nData, in);
       number = data[0];
       physDomain = (nTags > 0) ? data[1] : 0; // physical domain - the most important value
       elemDomain = (nTags > 1) ? data[2] : 0; // elementary domain
