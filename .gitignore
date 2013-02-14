@@ -2,3 +2,4 @@ build
 *.user
 doc
 cpoints
+*.geo

@@ -14,6 +14,8 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 
+GeoShape::~GeoShape() { }
+
 /**
  * Initialization of geometric shape
  * \param[in] cen - the center of shape

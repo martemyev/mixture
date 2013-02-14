@@ -59,7 +59,7 @@ private:
   void writeEmptyMasterBrick(std::string); // write geometry of empty superelement to the corresponding file
   
   // to walk on xml document with geometry parameters
-  virtual bool for_each(pugi::xml_node&);
+  bool for_each(pugi::xml_node&);
   
   // get some information from xml file
   void getInfoFromParamFile(std::string, std::string, std::string, std::string, \

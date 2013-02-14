@@ -54,6 +54,8 @@ public:
   //GeoShape(const GeoShape&);
   //GeoShape& operator =(const GeoShape&);
 
+  virtual ~GeoShape();
+
   void init(const Node3D &, double[], double[], double, double); // initialization procedure
   
   void toNewCoord(double[], double[]); // means: transformation matrix multiplies on vector of coordinates to get new coordinates
