@@ -196,7 +196,7 @@ inline int GeoShape::getnVertices() const { return nVertices; }
  * Get some vertex of shape.
  * \param[in] num - the number of vertex
  */
-inline Node3D* GeoShape::getVertex(int num) {
+inline Node3D* GeoShape::getVertex(int num) const {
   require(num >= 0 && num < nVertices, "Incorrect input parameter!", "GeoShape::getVertex");
   return &vertices[num];
 }

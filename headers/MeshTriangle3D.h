@@ -32,7 +32,9 @@ private:
   double area; // the area of the triangle
 
 public:
-  MeshTriangle3D() { domain = 0; }
+  MeshTriangle3D()
+    : domain(0)
+  { }
 
   MeshTriangle3D(const MeshTriangle3D &t) {
     for (int i = 0; i < nVertices; i++) {
@@ -85,14 +87,14 @@ public:
   }
 
   static int getnVertices() { return nVertices; }
-  int getDomain() { return domain; }
+  int getDomain() const { return domain; }
 
-  int getVertex(int k) {
+  int getVertex(int k) const {
     require(k >= 0 && k < nVertices, "Incorrect input parameter!", "MeshTriangle3D::getVertex");
     return vertices[k];
   }
 
-  double getArea() { return area; }
+  double getArea() const { return area; }
 };
 
 #endif

@@ -64,7 +64,7 @@ public:
 
   Node3D* getCenter(); // get the center of shape
   int getnVertices() const; // get the number of vertices
-  Node3D* getVertex(int); // get some vertex of shape
+  Node3D* getVertex(int) const; // get some vertex of shape
   double getLen(int) const; // get some length
   double getRVec(int) const; // get some component of rotation vector
   double getAngle() const; // get the angle of rotation
