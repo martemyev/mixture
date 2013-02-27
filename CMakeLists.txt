@@ -18,10 +18,14 @@ project(mixture CXX)
 # --- set version ---
 set(mixture_VERSION_MAJOR 2)
 set(mixture_VERSION_MINOR 4)
-set(mixture_VERSION_PATCH 3)
+set(mixture_VERSION_PATCH 4)
 
 # --- necessary paths and options ---
-set(gmsh_BIN "gmsh" CACHE PATH "Path to Gmsh binary file")
+if(WIN32)
+  set(gmsh_BIN "C:/Program Files/gmsh_directory/gmsh.exe" CACHE PATH "Path to Gmsh binary file")
+else(WIN32)
+  set(gmsh_BIN "gmsh" CACHE PATH "Path to Gmsh binary file")
+endif(WIN32)
 set(gmsh_build_cpoints_options "-2 -bin -algo front3d" CACHE STRING "Gmsh meshing options")
 set(cpoints_DIR ${PROJECT_SOURCE_DIR}/cpoints CACHE PATH "Path to directory with cpoints (control points) files")
 set(templates_DIR ${PROJECT_SOURCE_DIR} CACHE PATH "Path to directory where the templates.geo file is")
@@ -29,13 +33,25 @@ set(templates_DIR ${PROJECT_SOURCE_DIR} CACHE PATH "Path to directory where the 
 #set(Boost_USE_STATIC_LIBS ON)
 #set(Boost_USE_STATIC_LINK ON)
 #set(Boost_USE_MULTITHREADED ON)
-#find_package(Boost COMPONENTS filesystem system)
-
-#if(Boost_FOUND)
-#  message ("Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
-#  message ("Boost_LIBRARIES = ${Boost_LIBRARIES}")
-#  include_directories (${Boost_INCLUDE_DIRS})
-#endif(Boost_FOUND)
+find_package(Boost COMPONENTS filesystem system)
+if(Boost_FOUND)
+  message("Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
+  message("Boost_LIBRARIES = ${Boost_LIBRARIES}")
+  include_directories(${Boost_INCLUDE_DIRS})
+else(Boost_FOUND)
+  if(WIN32)
+    set(boost_INCL_DIR "C:/Users/artemiev/Download/boost_1_53_0/boost_1_53_0" CACHE PATH "The path to the boost headers")
+    set(boost_LIB_DIR "C:/Users/artemiev/Download/boost_1_53_0/boost_1_53_0/stage/lib" CACHE PATH "The path to the boost libraries")
+  else(WIN32)
+    set(boost_INCL_DIR "/home/artemiev/install/boost_1_53_0" CACHE PATH "The path to the boost headers")
+    set(boost_LIB_DIR "/home/artemiev/install/boost_1_53_0/stage/lib" CACHE PATH "The path to the boost libraries")
+  endif(WIN32)
+  include_directories(${boost_INCL_DIR})
+  find_library(BOOST_FILESYSTEM boost_filesystem libboost_filesystem ${boost_LIB_DIR})
+  find_library(BOOST_SYSTEM boost_system libboost_system ${boost_LIB_DIR})
+  message("BOOST_FILESYSTEM = ${BOOST_FILESYSTEM}")
+  message("BOOST_SYSTEM = ${BOOST_SYSTEM}")
+endif(Boost_FOUND)
 
 # --- sources ---
 set(SOURCES_DIR ${PROJECT_SOURCE_DIR}/sources)
@@ -54,11 +70,22 @@ configure_file(
   "${PROJECT_BINARY_DIR}/Config.h")
 include_directories(${PROJECT_BINARY_DIR}) # because Config.h file is in binary directory we need to include it
 
-add_library(${PROJECT_NAME} ${HEADERS_LIST} ${SOURCES_LIST})
+# --- check that Gmsh works ---
+message("check that Gmsh works: its version is")
+execute_process(COMMAND ${gmsh_BIN} --version RESULT_VARIABLE gmsh_CHECKING)
+message("gmsh_CHECKING = ${gmsh_CHECKING}")
+if(${gmsh_CHECKING} EQUAL 0)
+  message("Gmsh binary file is working properly!")
+else(${gmsh_CHECKING} EQUAL 0)
+  message(FATAL_ERROR "Gmsh binary file is not working!")
+endif(${gmsh_CHECKING} EQUAL 0)
 
-#if(Boost_FOUND)
-#  target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-#endif(Boost_FOUND)
+add_library(${PROJECT_NAME} ${HEADERS_LIST} ${SOURCES_LIST})
+if(Boost_FOUND)
+  target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+else(Boost_FOUND)
+  target_link_libraries(${PROJECT_NAME} ${BOOST_FILESYSTEM} ${BOOST_SYSTEM})
+endif(Boost_FOUND)
 
 # --- packaging of the library ---
 # -- make package --
@@ -81,4 +108,3 @@ if(DOXYGEN_FOUND)
 else(DOXYGEN_FOUND)
   message("WARNING: Doxygen is not found - Autodocumentation will not be created")
 endif(DOXYGEN_FOUND)
-
