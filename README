@@ -1,17 +1,10 @@
-How to build mixture library:
+If you have found a bug, or you have a question, please
+write it on the mixture's Issues web-page
+https://code.google.com/p/mixture/issues/list
 
-Linux
+But before doing it please make sure that
+you haven't found the information on the mixture's Wiki web-page
+https://code.google.com/p/mixture/w/list
 
-1. Go to the project directory (we'll call it 'mixdir')
-  cd mixdir
-2. Create directory for building files (cmake files, object files, mixture lirbary itself, etc - we'll call it 'build')
-  mkdir build
-3. Go to 'build' directory
-  cd build
-4. Start CMake to configure the project (note that CMakeLists.txt file with instructions for CMake is in parent directory, so we need to point this out)
-  cmake ..
-5. Build the library
-  make
-6. [optional] If doxygen is installed on your system, you can generate documentation just typing
-  make doc
-  After that find the documentation in html format in 'mixdir/doc/html' directory.
+For 'how to build the library' information please look at
+https://code.google.com/p/mixture/wiki/How_to_build_the_library

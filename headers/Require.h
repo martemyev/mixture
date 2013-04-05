@@ -14,6 +14,7 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
+#include "Config.h"
 
 inline void frequire(FILE *f, std::string file = "Unknown file", std::string procedure = "Unknown procedure") {
   if (f == 0) {
@@ -43,4 +44,16 @@ inline void require(bool requirement, std::string error = "Requirement failed!",
   }
 }
 
-#endif
+#if BOOST_FS
+#else
+inline bool fexists(const std::string& fileName) {
+  std::ifstream in(fileName.c_str());
+  if (in) {
+    in.close();
+    return true; // file exists
+  }
+  return false; // file doesn't exist
+}
+#endif // BOOST_FS
+
+#endif // REQUIRE_H

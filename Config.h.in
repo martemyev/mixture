@@ -1,3 +1,6 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
 /*
  * mixture - Copyright (c) 2012-2013 Mikhail Artemiev
  *
@@ -11,6 +14,12 @@
 #define MIXTURE_VERSION_MAJOR "@mixture_VERSION_MAJOR@"
 #define MIXTURE_VERSION_MINOR "@mixture_VERSION_MINOR@"
 #define MIXTURE_VERSION_PATCH "@mixture_VERSION_PATCH@"
+
+// is it a WIN32 operating system or not
+#define WIN32_OS @WIN32_OS@
+
+// is there Boost libraries or not
+#define BOOST_FS @BOOST_FS@
 
 // path to Gmsh binary file
 const std::string GMSH_BIN = "@gmsh_BIN@";
@@ -37,3 +46,5 @@ const std::string TEMPLATES_FILENAME = "templates.geo";
 #define INCL_SURFACE 3021
 #define MAIN_DOMAIN 4001
 #define INCLUSION_DOMAIN 4002
+
+#endif // CONFIG_H

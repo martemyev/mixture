@@ -1,0 +1,52 @@
+cmake_minimum_required(VERSION 2.8)
+
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose build type")
+endif(NOT DEFINED CMAKE_BUILD_TYPE)
+
+project(demo)
+
+# --- connection with 'mixture' library ---
+set(MIXTURE_DIR /home/artemiev/projects/mixture CACHE PATH "Path to the top directory of the 'mixture' library sources")
+include_directories(${MIXTURE_DIR}/headers)
+if(WIN32)
+  find_library(MIXTURE_LIB mixture libmixture PATHS ${MIXTURE_DIR} ${MIXTURE_DIR}/build PATH_SUFFIXES Debug Release RelWithDebInfo)
+else(WIN32)
+  find_library(MIXTURE_LIB mixture libmixture PATHS ${MIXTURE_DIR} ${MIXTURE_DIR}/build)
+endif(WIN32)
+message("MIXTURE_LIB = ${MIXTURE_LIB}")
+if(NOT MIXTURE_LIB)
+  message(FATAL_ERROR "WARNING! mixture library wasn't found!")
+endif(NOT MIXTURE_LIB)
+
+# --- connection with Boost libraries ---
+find_package(Boost COMPONENTS filesystem system)
+if(Boost_FOUND)
+  message("Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
+  message("Boost_LIBRARIES = ${Boost_LIBRARIES}")
+  include_directories(${Boost_INCLUDE_DIRS})
+else(Boost_FOUND)
+  if(WIN32)
+    set(boost_INCL_DIR "C:/Users/artemiev/Download/boost_1_53_0/boost_1_53_0" CACHE PATH "The path to the boost headers")
+    set(boost_LIB_DIR "C:/Users/artemiev/Download/boost_1_53_0/boost_1_53_0/stage/lib" CACHE PATH "The path to the boost libraries")
+  else(WIN32)
+    set(boost_INCL_DIR "/home/artemiev/install/boost_1_53_0" CACHE PATH "The path to the boost headers")
+    set(boost_LIB_DIR "/home/artemiev/install/boost_1_53_0/stage/lib" CACHE PATH "The path to the boost libraries")
+  endif(WIN32)
+  find_library(BOOST_FILESYSTEM boost_filesystem libboost_filesystem ${boost_LIB_DIR})
+  find_library(BOOST_SYSTEM boost_system libboost_system ${boost_LIB_DIR})
+  message("BOOST_FILESYSTEM = ${BOOST_FILESYSTEM}")
+  message("BOOST_SYSTEM = ${BOOST_SYSTEM}")
+endif(Boost_FOUND)
+
+
+add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp)
+target_link_libraries(${PROJECT_NAME} ${MIXTURE_LIB})
+if(Boost_FOUND)
+  target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+else(Boost_FOUND)
+  if(BOOST_FILESYSTEM)
+    target_link_libraries(${PROJECT_NAME} ${BOOST_FILESYSTEM} ${BOOST_SYSTEM})
+  endif(BOOST_FILESYSTEM)
+endif(Boost_FOUND)
+

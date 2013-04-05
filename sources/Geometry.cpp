@@ -20,7 +20,14 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <ctime>
-#include <boost/filesystem.hpp>
+#if BOOST_FS
+  #include <boost/filesystem.hpp>
+#else
+  #if WIN32
+    #include <windows.h>
+  #endif
+//  #include <stdexcept>
+#endif
 
 /**
  * Constructor of Geometry class.
@@ -80,12 +87,28 @@ int Geometry::init(const std::string &geoParamFileName, const std::string &geofi
 
   // check that directory with control points files exists.
   // if not we should create it
+#if BOOST_FS
   if (!boost::filesystem::exists(CPOINTS_DIR))
     boost::filesystem::create_directory(CPOINTS_DIR);
+#else
+  if (!fexists(CPOINTS_DIR)) {
+  #if WIN32
+    CreateDirectory(CPOINTS_DIR.c_str(), NULL);
+  #else // UNIX systems
+    std::string tmp = "mkdir -p " + CPOINTS_DIR;
+    if (!system(tmp.c_str())) // make directory
+      throw std::runtime_error("Directory " + CPOINTS_DIR + " cannot be created!");
+  #endif // WIN32
+  }
+#endif // BOOST_FS
 
   // check that the templates file exists.
   // if not we should create it
+#if BOOST_FS
   if (!boost::filesystem::exists(TEMPLATES_DIR + TEMPLATES_FILENAME))
+#else
+  if (!fexists(TEMPLATES_DIR + TEMPLATES_FILENAME))
+#endif
     printTemplates(TEMPLATES_DIR);
 
 #ifdef DEBUG
@@ -96,7 +119,11 @@ int Geometry::init(const std::string &geoParamFileName, const std::string &geofi
 //  srand() procedure Main class should call (Main - means that from which this procedure was called)
   srand(time(0) + (int)masterBrickLengths[0] + (int)masterBrickLengths[1] + (int)masterBrickLengths[2]);
 
+#if BOOST_FS
   require(boost::filesystem::exists(geoParamFileName), "File " + geoParamFileName + " doesn't exist!", procName);
+#else
+  require(fexists(geoParamFileName), "File " + geoParamFileName + " doesn't exist!", procName);
+#endif
 
   // parse an xml file with parameters
   pugi::xml_document doc;

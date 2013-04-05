@@ -12,7 +12,9 @@
 #include "TriangularMesh.h"
 #include "MeshTriangle3D.h"
 #include <iostream>
-#include <boost/filesystem.hpp>
+#if BOOST_FS
+  #include <boost/filesystem.hpp>
+#endif
 
 GeoShape::~GeoShape() { }
 
@@ -53,7 +55,11 @@ void GeoShape::init(const Node3D &cen, double len[], double rvec[], double an, d
   verticesInit();
   
   // initialization of the control points
+#if BOOST_FS
   if (!boost::filesystem::exists(cpointsFileName))
+#else
+  if (!fexists(cpointsFileName))
+#endif
     createUnitElementCPoints(0.1); // if there is no file with control points we must create it (parameter is a characteristic length of mesh)
   cpointsInit(cpointsFileName);
 }
@@ -421,9 +427,15 @@ void GeoShape::cpointsInit(std::string masterElementFileName) {
   // file with control points contains the mesh of unit shape,
   // i.e. lengths[] = { 1, 1, 1 }, and with a center at the origin of coordinates
   
+#if BOOST_FS
   require(boost::filesystem::exists(masterElementFileName),
           "File with control points '" + masterElementFileName + "' doesn't exist!" + \
           "You can create it using static function 'createUnitElementCPoints'.", "GeoShape::cpointsInit");
+#else
+  require(fexists(masterElementFileName),
+          "File with control points '" + masterElementFileName + "' doesn't exist!" + \
+          "You can create it using static function 'createUnitElementCPoints'.", "GeoShape::cpointsInit");
+#endif
   
   TriangularMesh sm; // mesh containing shape triangulation
   sm.readFromGmsh(masterElementFileName); // read mesh from file
