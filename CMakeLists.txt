@@ -18,7 +18,7 @@ project(mixture CXX)
 # --- set version ---
 set(mixture_VERSION_MAJOR 2)
 set(mixture_VERSION_MINOR 4)
-set(mixture_VERSION_PATCH 5)
+set(mixture_VERSION_PATCH 6)
 
 # --- necessary paths and options ---
 if(WIN32)
