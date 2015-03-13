@@ -1,11 +1,9 @@
-/*
- * mixture - Copyright (c) 2012-2013 Mikhail Artemiev
- *
- * http://code.google.com/p/mixture
- *
- * This library is provided under the terms of MIT license.
- * See the LICENSE file for license information.
- */
+//==========================================================//
+// mixture - Copyright (c) 2012-2013 Mikhail Artemiev       //
+//                                                          //
+// This library is provided under the terms of MIT license. //
+// See the LICENSE file for license information.            //
+//==========================================================//
 
 #ifndef CYLINDER_H
 #define CYLINDER_H
