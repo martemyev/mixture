@@ -1,0 +1,117 @@
+# example of using 'mixture' library
+
+= Introduction =
+
+The library is too small to have a big manual, so the description of this tool will be done through an example. Top level directory of library sources includes the directory 'demo', where you can find an example described below.
+
+= How to use it in your code =
+
+Consider an example: you need to define a specimen represented by parallelepiped and containing inclusions of different shapes and sizes. <br/>
+Let's be more specific:
+{{{
+  size of parallelepiped: 10 x 20 x 30
+  inclusions:
+    spheres:
+      number = 100
+      diameter = 0.1
+    cylinders:
+      number = 50
+      diameter of base = 0.2
+      height = 0.5
+    bricks:
+      number = 200
+      size = 0.1 x 0.05 x 0.1
+}}}
+Now we'll write a code. There are two ways to define a size of a specimen. <br/>
+The first way is to define it in code.
+{{{
+// example of using 'mixture' library
+// demo.cpp
+
+#include <iostream>
+#include <string>
+
+// this header contains the description of all functions that we'll need
+// to create the .geo file
+#include "Geometry.h"
+
+int main(int argc, char** argv)
+{
+  // parameters of the parallelepiped
+  const double x0   = 0; // start point
+  const double y0   = 0;
+  const double z0   = 0;
+  const double lenX = 10; // size of the shape
+  const double lenY = 20;
+  const double lenZ = 30;
+  // characteristic length of the mesh in the parallelepiped
+  const double cl   = 0.1;
+  
+  // the name of file containing information about inclusions
+  std::string incl_description;
+  if (argc >= 2)
+    incl_description = std::string(argv[1]);
+  else
+    incl_description = "xml/inclusions.xml";
+  
+  // the resulting file that can be used as input file for Gmsh
+  std::string res_geometry;
+  if (argc >= 3)
+    res_geometry = std::string(argv[2]);
+  else
+    res_geometry = "geometry.geo";
+  
+  Geometry geo;
+  geo.init(x0, y0, z0, lenX, lenY, lenZ, cl, incl_description, res_geometry);
+  // after creating inclusions it's good practice to check - how many inclusions were created
+  std::cout << "we have "           << geo.getnRealSpheres() << \
+               " spheres from "     << geo.getnSpheres() << \
+               " that we've wanted" << std::endl;
+  std::cout << "we have "           << geo.getnRealCylinders() << \
+               " cylinders from "   << geo.getnCylinders() << \
+               " that we've wanted" << std::endl;
+  std::cout << "we have "           << geo.getnRealOrthoBricks() << \
+               " bricks from "      << geo.getnOrthoBricks() << \
+               " that we've wanted" << std::endl;
+  return 0;
+}
+}}}
+
+That's all. Now we'll build this example using CMake and then we'll run it.<br/>
+The sequence of actions for building an executable 'demo' is quite simple in both Unix and Windows operating systems. It is very similar to one describing the process of 'mixture' library building. So, if you are not familiar with this technique, please, look at [http://code.google.com/p/mixture/wiki/How_to_build_the_library this].
+
+After we built a demo example we should create an xml file describing the interior structure of the specimen under investigation.
+
+inclusions.xml
+
+{{{
+<sphere number="100" cl="0.1">
+  <diam exact="0.1"/>
+</sphere>
+
+<cylinder number="50" cl="0.1">
+  <dMajor exact="0.2"/>
+  <dMinor exact="0.2"/>
+  <height exact="0.5"/>
+</cylinder>
+
+<orthobrick number="200" cl="0.2">
+  <lenX exact="0.1"/>
+  <lenY exact="0.05"/>
+  <lenZ exact="0.1"/>
+</orthobrick>
+}}}
+
+Now run the example again. For example,
+
+{{{
+$ ./demo inclusions.xml geometry.geo
+}}}
+
+It will create a "geometry.geo" file, that we can further use as input file for Gmsh. For example,
+
+{{{
+$ gmsh geometry.geo -3 -o mesh.msh
+}}}
+
+To be continued...

@@ -1,0 +1,45 @@
+step-by-step explanations on how to build the library in Windows and Unix systems
+
+= Introduction =
+
+Though the library has been developed in Linux OS, it was designed being cross-platform, therefore it can be used in Windows and, probably, OS X systems as well. Since we have no access to OS X, the library was tested on Linux (Ubuntu) and Windows platforms only. The project uses cross-platform tool named [http://www.cmake.org CMake] to build Makefile (in Linux) and Visual Studio project files (in Windows). Though the sequence of actions for building the library in both operating systems stays the same, we are going to consider building process on each platform separately.
+
+= Unix =
+
+ # Download the latest archive of 'mixture' sources from [http://code.google.com/p/mixture/downloads/list Downloads].
+ # Unpack the archive
+$ tar -xzf mixture-x.y.z-Source.tar.gz
+ # Go to the sources directory and create an auxiliary directory (say, 'build') there
+$ cd mixture-x.y.z-Source
+$ mkdir build
+$ cd build
+ # Configure the project using cmake
+$ cmake ..
+  Note: cmake should be new (at least newer than 2.8 version). You can check the version of cmake typing
+$ cmake --version
+ # There are several variables that you can (or even should) change for right work of the library. You can see that variables using 'ccmake' utility
+$ ccmake ..
+  The most valuable variables are:
+    * cpoints_DIR - the directory where the special control points will take place (point to mixture-x.y.z-Source directory by default)
+    * templates_DIR - the directory where the special .geo file 'templates.geo' will take place (point to the same place as cpoints_DIR by default)
+    * gmsh_BIN - the path to Gmsh's binary file (by default it's just 'gmsh')
+ # Build the library
+$ make
+
+= Windows =
+
+ # Download the latest archive of 'mixture' sources from [http://code.google.com/p/mixture/downloads/list Downloads].
+ # Unpack the archive (using, for example, [http://www.7-zip.org/ 7zip]).
+ # Launch 'cmake-gui' application. If there is no CMake on your computer, you can download it from [http://www.cmake.org/cmake/resources/software.html here].
+ # Fill the fields "Where is the source code", pointing to 'mixture' sources directory, and "Where to build the binaries", pointing to directory 'build' inside the 'mixture' sources directory.
+ # Press "Configure"
+ # If you don't have a 'build' directory, CMake will propose to create it.
+ # During first start of CMake, you must choose the C++ compiler and environment for building project. I had Visual Studio 2010, so my choice was "Visual Studio 10 Win64", "Use default native compilers".
+ # Now you need to correct several important variables.
+   # The default built type is RelWithDebInfo. You can change it, but it's optional.
+   # If you see that Boost couldn't be found, it's not really good, but it's not necessarily to correct it too. If you have Boost libraries installed on your computer, you can try to change 'Boost_DIR' variable. Otherwise, keep Boost libraries undefined. But if your system is OS X, you'd better install Boost libraries, and define the path to them through 'Boost_DIR' variable, because in this case the library may work incorrectly.
+   # If you see that gmsh_CHECKING variable is not equal to 0, you'll definitely see the warning: "Gmsh binary file is not working! You can miss this warning only if you're strongly sure that Gmsh binary file is working!". It means that the vital variable 'gmsh_BIN' is wrong and you must correct it. You can not to correct it only if you're sure that 'gmsh_BIN' points to the right gmsh executable file, but for some reason CMake wasn't be able to check it properly. I can say that I face this situation from time to time when I build the project in Qt Creator IDE.
+   # Doxygen is not found - It's optional.
+ # Press "Configure" again. After suitably defined variables this step should pass without any errors.
+ # Press "Generate"
+ # Now CMake configured and generated project files for your environment. If it's Visual Studio, you will be able to launch 'mixture.sln' to open the project in the IDE. After that you will be able to build the library.
