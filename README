@@ -1,10 +1,21 @@
-If you have found a bug, or you have a question, please
-write it on the mixture's Issues web-page
-http://code.google.com/p/mixture/issues/list
+The "mixture" project is useful, if the following is true:
+  * you need to simulate a process in a complex heterogeneous 3D domain 
+    consisting of inclusions of different size, orientation and distribution;
+  * you plan to mesh this domain using Gmsh.
 
-But before doing it please make sure that
-you haven't found the information on the mixture's Wiki web-page
-http://code.google.com/p/mixture/w/list
+The project is quite simple, so its main goal is to create a .geo file, that 
+can be used further as input for Gmsh. There are limitations for a specimen 
+shape and for inclusions shapes and distribution:
+  * specimen is a brick only, with edges parallel to Cartesian axes;
+  * inclusions are
+    * orthobricks (bricks with edges orthogonal to each other);
+    * cylinders (with ellipse or circle as base);
+    * ellipsoids;
+    * spheres (a particular case of ellipsoids);
+    * standard tetrahedra (all edges are equal).
+  * inclusions cannot intersect each other and the faces of the specimen.
 
-For 'how to build the library' information please look at
-http://code.google.com/p/mixture/wiki/How_to_build_the_library
+So, this project is useful if you model such media as concrete, porous media, 
+composite material with solid inclusions that have special shape and cannot 
+intersect each other.
+
